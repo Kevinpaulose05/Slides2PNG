@@ -20,15 +20,15 @@ A tool to download an entire Google Slides deck as images and save them directly
 14. Copy and paste the web app URL you recieved after deploying and open it in your browser.
 15. You will see the following prompt:
 
-![alt text](image.png)
+![alt text](images/image.png)
 
 16. Select `Review Permissions` and choose your Google account to sign in.
 17. Now you will see a warning like this-
 
-![alt text](<Screenshot from 2025-03-11 11-44-58.png>)
+![alt text](images/<Screenshot from 2025-03-11 11-44-58.png>)
 
 18. Click `Advanced` and select `Go to Google Slide PNG Downloader (unsafe)`-
-    ![alt text](image-1.png)
+    ![alt text](images/image-1.png)
 19. Ignore the warning and this is perfectly safe.
 20. All Google to access your slides and drive by clicking `Allow` to authorize google.
 21. Now go to the slide you want to download and copy the presentation id, everything between `/d` and /`edit` in your slides' URL. For example, for the URL `https://docs.google.com/presentation/d/ssnsak1j3n2jk2/edit#slide=id.p1`, copy ssnsak1j3n2jk2 and paste this character string into your deployed web app's `Enter a Google Slides link below:` field.
