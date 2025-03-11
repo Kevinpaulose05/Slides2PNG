@@ -25,7 +25,7 @@ A tool to download an entire Google Slides deck as images and save them directly
 16. Select `Review Permissions` and choose your Google account to sign in.
 17. Now you will see a warning like this-
 
-![alt text](images/Screenshot from 2025-03-11 11-44-58.png)
+![alt text](images/screenshot1)
 
 18. Click `Advanced` and select `Go to Google Slide PNG Downloader (unsafe)`-
     ![alt text](images/image-1.png)
