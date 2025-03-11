@@ -1,0 +1,66 @@
+<!-- Author: Kevin Paulose
+Last updated: March 11, 2025 -->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <script>
+      function exportImages() {
+        var presentationUrl = document.getElementById('presentationUrl').value;
+        if (!presentationUrl) {
+          alert('Please enter a Google Slides link.');
+          return;
+        }
+
+        // Clear logs and results before starting new processing
+        document.getElementById("status").innerHTML = "Processing... Please wait.";
+        document.getElementById("results").innerHTML = "";
+        document.getElementById("logs").innerHTML = "";
+
+        google.script.run.withSuccessHandler(showResults).exportSlidesToImages(presentationUrl);
+
+        updateLogs(true); // Start fetching logs and reset logs first
+      }
+
+      function showResults(result) {
+        if (Array.isArray(result.urls)) {
+          var html = "<h3>Download Images:</h3><ul>";
+          result.urls.forEach(url => {
+            html += `<li><a href="${url}" target="_blank">${url}</a></li>`;
+          });
+          html += "</ul>";
+          document.getElementById("results").innerHTML = html;
+        } else {
+          document.getElementById("results").innerHTML = `<p style="color: red;">${result}</p>`;
+        }
+        document.getElementById("status").innerHTML = "Processing completed!";
+      }
+
+      function updateLogs(reset = false) {
+        if (reset) {
+          document.getElementById("logs").innerHTML = ""; // Clear previous logs
+        }
+
+        google.script.run.withSuccessHandler(function(logs) {
+          var logsContainer = document.getElementById("logs");
+          logsContainer.innerHTML = logs.map(log => `<p>${log}</p>`).join("");
+
+          // Auto-scroll to latest log
+          logsContainer.scrollTop = logsContainer.scrollHeight;
+
+          setTimeout(updateLogs, 2000); // Update logs every 2 seconds
+        }).getProgress();
+      }
+    </script>
+  </head>
+  <body>
+    <h2>Google Slide PNG downloader</h2>
+    <p>Enter a Google Slides link below:</p>
+    <input type="text" id="presentationUrl" style="width: 80%;" placeholder="https://docs.google.com/presentation/d/...">
+    <button onclick="exportImages()">Convert</button>
+
+    <p id="status"></p>
+    <div id="logs" style="border: 1px solid black; padding: 10px; max-height: 300px; overflow-y: auto;"></div>
+    <div id="results"></div>
+  </body>
+</html>
