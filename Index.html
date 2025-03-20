@@ -1,66 +1,114 @@
-<!-- Author: Kevin Paulose
-Last updated: March 11, 2025 -->
-
 <!DOCTYPE html>
 <html>
   <head>
+    <title>Multiple Google Slides PNG Downloader</title>
     <script>
-      function exportImages() {
-        var presentationUrl = document.getElementById('presentationUrl').value;
-        if (!presentationUrl) {
-          alert('Please enter a Google Slides link.');
+      /**
+       * Dynamically adds a new text input for another Google Slides link.
+       */
+      function addSlideLink() {
+        var container = document.getElementById("slideLinksContainer");
+        var div = document.createElement("div");
+        div.innerHTML = '<input type="text" class="slideLink" style="width: 80%;" placeholder="https://docs.google.com/presentation/d/...">';
+        container.appendChild(div);
+      }
+
+      /**
+       * Collects all links and calls the server-side exportAllSlidesToImages() once.
+       */
+      function exportAllImages() {
+        var linkInputs = document.getElementsByClassName("slideLink");
+        var links = [];
+        for (var i = 0; i < linkInputs.length; i++) {
+          var url = linkInputs[i].value.trim();
+          if (url) {
+            links.push(url);
+          }
+        }
+
+        if (!links.length) {
+          alert("Please enter at least one Google Slides link.");
           return;
         }
 
-        // Clear logs and results before starting new processing
+        // Clear logs and results before starting
         document.getElementById("status").innerHTML = "Processing... Please wait.";
         document.getElementById("results").innerHTML = "";
         document.getElementById("logs").innerHTML = "";
 
-        google.script.run.withSuccessHandler(showResults).exportSlidesToImages(presentationUrl);
+        // Call the new server-side function for multiple links
+        google.script.run.withSuccessHandler(showResults).exportAllSlidesToImages(links);
 
-        updateLogs(true); // Start fetching logs and reset logs first
+        // Start polling logs
+        updateLogs(true);
       }
 
+      /**
+       * Displays the final URLs or any error after exportAllSlidesToImages finishes.
+       */
       function showResults(result) {
-        if (Array.isArray(result.urls)) {
+        if (Array.isArray(result.allUrls)) {
           var html = "<h3>Download Images:</h3><ul>";
-          result.urls.forEach(url => {
-            html += `<li><a href="${url}" target="_blank">${url}</a></li>`;
+          result.allUrls.forEach(url => {
+            html += "<li><a href=\"" + url + "\" target=\"_blank\">" + url + "</a></li>";
           });
           html += "</ul>";
           document.getElementById("results").innerHTML = html;
         } else {
-          document.getElementById("results").innerHTML = `<p style="color: red;">${result}</p>`;
+          // If we didn't get an array, display as error
+          document.getElementById("results").innerHTML = "<p style=\"color: red;\">" + JSON.stringify(result) + "</p>";
         }
+
         document.getElementById("status").innerHTML = "Processing completed!";
       }
 
+      /**
+       * Polls the server for the latest logs every 2 seconds.
+       */
       function updateLogs(reset = false) {
         if (reset) {
-          document.getElementById("logs").innerHTML = ""; // Clear previous logs
+          document.getElementById("logs").innerHTML = "";
         }
 
         google.script.run.withSuccessHandler(function(logs) {
           var logsContainer = document.getElementById("logs");
-          logsContainer.innerHTML = logs.map(log => `<p>${log}</p>`).join("");
+          logsContainer.innerHTML = logs.map(function(log) {
+            return "<p>" + log + "</p>";
+          }).join("");
 
-          // Auto-scroll to latest log
+          // Auto-scroll to the bottom
           logsContainer.scrollTop = logsContainer.scrollHeight;
 
-          setTimeout(updateLogs, 2000); // Update logs every 2 seconds
+          setTimeout(updateLogs, 2000);
         }).getProgress();
       }
     </script>
   </head>
   <body>
-    <h2>Google Slide PNG downloader</h2>
-    <p>Enter a Google Slides link below:</p>
-    <input type="text" id="presentationUrl" style="width: 80%;" placeholder="https://docs.google.com/presentation/d/...">
-    <button onclick="exportImages()">Convert</button>
+    <h2>Google Slides PNG Downloader</h2>
+
+    <!-- Button to add another Slides link input -->
+    <button onclick="addSlideLink()">Add Slide Link</button>
+    <br><br>
+
+    <!-- Container for multiple links -->
+    <div id="slideLinksContainer">
+      <!-- Start with one link input by default -->
+      <div>
+        <input type="text" class="slideLink" style="width: 80%;" placeholder="https://docs.google.com/presentation/d/...">
+      </div>
+    </div>
+    <br>
+
+    <!-- Single Convert button to process all links at once -->
+    <button onclick="exportAllImages()">Convert</button>
 
     <p id="status"></p>
+
+    <!-- Logs container -->
     <div id="logs" style="border: 1px solid black; padding: 10px; max-height: 300px; overflow-y: auto;"></div>
+
+    <!-- Final results (URLs) container -->
     <div id="results"></div>
   </body>
 </html>
