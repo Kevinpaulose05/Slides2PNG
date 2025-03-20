@@ -1,10 +1,45 @@
 // Author: Kevin Paulose
-// Last updated: March 11, 2025
+// Last updated: March 20, 2025
 
 function doGet(e) {
   return HtmlService.createHtmlOutputFromFile('Index');
 }
 
+/**
+ * Processes multiple slide links in sequence.
+ * Calls exportSlidesToImages() for each link.
+ */
+function exportAllSlidesToImages(links) {
+  var logs = [];
+  var allExportedUrls = [];
+
+  // Process each link one-by-one
+  for (var i = 0; i < links.length; i++) {
+    var link = links[i];
+    logs.push("Starting export for Link #" + (i+1) + ": " + link);
+    sendProgress(logs);
+
+    // Call the single-link function
+    var result = exportSlidesToImages(link);
+
+    // Gather up the exported URLs
+    allExportedUrls = allExportedUrls.concat(result.urls);
+
+    logs.push("Finished export for Link #" + (i+1));
+    sendProgress(logs);
+  }
+
+  logs.push("✅ All slide links processed!");
+  sendProgress(logs);
+
+  // Return everything so the front-end can show them
+  return { allUrls: allExportedUrls, logs: logs };
+}
+
+/**
+ * Exports all slides from a single Google Slides link to PNG images.
+ * Overwrites (trashes) any existing PNGs of the same name in the folder.
+ */
 function exportSlidesToImages(presentationUrl) {
   try {
     var presentationId = presentationUrl.match(/[-\w]{25,}/)[0];
@@ -24,11 +59,15 @@ function exportSlidesToImages(presentationUrl) {
 
     // Check if 'PNG Slide Exports' folder exists, create if it doesn't
     var imagesFolderIterator = parentFolder.getFoldersByName('PNG Slide Exports');
-    var imagesFolder = imagesFolderIterator.hasNext() ? imagesFolderIterator.next() : parentFolder.createFolder('PNG Slide Exports');
+    var imagesFolder = imagesFolderIterator.hasNext() 
+      ? imagesFolderIterator.next() 
+      : parentFolder.createFolder('PNG Slide Exports');
 
     // Check if subfolder exists for this presentation, otherwise create it
     var presentationFolderIterator = imagesFolder.getFoldersByName(presentationFilename);
-    var presentationFolder = presentationFolderIterator.hasNext() ? presentationFolderIterator.next() : imagesFolder.createFolder(presentationFilename);
+    var presentationFolder = presentationFolderIterator.hasNext()
+      ? presentationFolderIterator.next()
+      : imagesFolder.createFolder(presentationFilename);
 
     var exportedSlides = [];
     var logs = [];
@@ -57,7 +96,16 @@ function exportSlidesToImages(presentationUrl) {
           var response = UrlFetchApp.fetch(url, options);
 
           if (response.getResponseCode() === 200) {
-            var imageBlob = response.getBlob().setName(presentationFilename + '_Slide' + slideNumber + '.png');
+            // Check if a file with the same name already exists. If so, trash it.
+            var fileName = presentationFilename + '_Slide' + slideNumber + '.png';
+            var existingFiles = presentationFolder.getFilesByName(fileName);
+            while (existingFiles.hasNext()) {
+              var existingFile = existingFiles.next();
+              existingFile.setTrashed(true);
+            }
+
+            // Create the new PNG file
+            var imageBlob = response.getBlob().setName(fileName);
             var file = presentationFolder.createFile(imageBlob);
             exportedSlides.push(file.getUrl());
             logs.push(`✅ Slide ${slideNumber} exported successfully.`);
@@ -84,6 +132,7 @@ function exportSlidesToImages(presentationUrl) {
         }
       }
 
+      // Pause briefly after each successful slide
       if (success) {
         Utilities.sleep(retryDelay);
       }
@@ -97,12 +146,16 @@ function exportSlidesToImages(presentationUrl) {
   }
 }
 
-// Sends progress updates to the frontend
+/**
+ * Sends progress updates to the frontend
+ */
 function sendProgress(logs) {
   CacheService.getScriptCache().put("exportProgress", JSON.stringify(logs), 300);
 }
 
-// Fetches the latest progress logs
+/**
+ * Fetches the latest progress logs
+ */
 function getProgress() {
   var logs = CacheService.getScriptCache().get("exportProgress");
   return logs ? JSON.parse(logs) : [];
